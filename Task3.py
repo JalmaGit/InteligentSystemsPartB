@@ -1,7 +1,7 @@
 import random
 
 def main():
-    # newProblem = Problem("VIJANDER_SINGH*200135",200,0.1)
+    # newProblem = Problem(target, population, mutation, crossover_probability)
     newProblem = Problem("Joar_Breivik*588289", 500, 0.05, 0.8)
     newProblem.generation = 1000
     print(newProblem.run_genetic_algorithm())
@@ -16,6 +16,7 @@ class Individual:
         self.name = []
         self.weight = 1
 
+        #Creates the name for the indivual
         for i in range(name_length):
             self.name.append(DNA())
 
@@ -81,8 +82,8 @@ class Problem:
         for i in range(len(self.population)):
             weights.append(self.population[i].weight)
             listOfNames.append(self.population[i].name)
-        #print(weights)
 
+        #Randomly selects name, weighted towards name closest to the solution
         parent1 = random.choices(listOfNames, weights)[0]
         parent2 = random.choices(listOfNames, weights)[0]
 
