@@ -2,14 +2,15 @@ import random
 
 def main():
     # newProblem = Problem("VIJANDER_SINGH*200135",200,0.1)
-    newProblem = Problem("Joar_Matias*588289", 500, 0.05, 1)
+    newProblem = Problem("Joar_Breivik*588289", 500, 0.05, 0.8)
     newProblem.generation = 1000
-    print(newProblem.iterate())
+    print(newProblem.run_genetic_algorithm())
 
 def DNA():
-    characters = " ABCDEFGHIJKLMNOPQRTSUVWXYZØÆÅabcdefghijklmnopqrstuvwxyzæøå#*_-^<>:;123456789"
+    characters = " ABCDEFGHIJKLMNOPQRTSUVWXYZØÆÅabcdefghijklmnopqrstuvwxyzæøå#*_-^<>:;@.,123456789"
     char = random.choice(characters)
     return char
+
 class Individual:
     def __init__(self,name_length):
         self.name = []
@@ -116,16 +117,16 @@ class Problem:
                 child[i] = DNA()
         return child
 
-    def iterate(self):
+    def run_genetic_algorithm(self):
         for i in range(self.generation):
             self.mating()
             self.fitness_test()
-            self.generations_to_found += 1
+            self.generations_to_found = i
 
-            print(self.generations_to_found)
+            print(i)
             print(self.best)
             if self.best == self.target_name:
-                return "Target name found, " + self.best + " With " + str(self.generations_to_found) + " generations"
+                return "Target name found, " + self.best + " With " + str(i) + " generations"
         return "Target not found"
 
 main()
