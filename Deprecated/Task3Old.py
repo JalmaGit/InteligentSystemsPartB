@@ -5,7 +5,7 @@ import numpy as np
 
 def main():
     # newProblem = Problem(target, population, mutation, crossover_probability)
-    newProblem = Problem("Joar_Breivik*588289", 50, 0.05, 0.8)
+    newProblem = Problem("Joar_Breivik*588289", 500, 0.05, 0.8)
     newProblem.generation = 1000
 
     print(newProblem.run_genetic_algorithm())
@@ -58,7 +58,7 @@ class Problem:
         self.best_fitness = []
         self.best_fitness_level = 0
 
-        self.weight_multiplier = 5
+        self.weight_multiplier = 10
         self.best_current_fitness = 1
         self.best = ""
 
@@ -164,3 +164,18 @@ class Problem:
 
 
 main()
+
+
+def uniformCrossover(self, parent1, parent2):
+    # Convert strings to NumPy arrays of characters
+    parent1_array = np.array(list(parent1))
+    parent2_array = np.array(list(parent2))
+    # Generate a mask of random choices between the two parents
+    choices = np.random.choice([True, False], size=len(parent1), replace=True)
+    # Create children arrays
+    child1_array = np.where(choices, parent1_array, parent2_array)
+    child2_array = np.where(choices, parent2_array, parent1_array)
+    # Convert NumPy arrays back to strings
+    child1 = ''.join(child1_array)
+    child2 = ''.join(child2_array)
+    return child1, child2
