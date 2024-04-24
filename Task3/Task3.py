@@ -140,6 +140,7 @@ logger = Logger()
 population = pop.population
 
 generations = 0
+
 while True:
     fitnessValues =  algorithm.getFitnessValues(population)
     
