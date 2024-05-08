@@ -25,6 +25,9 @@ class Item:
 class Indiv:
     def __init__(self, stock, weightCapacity, volumeCapacity, accountBalance):     
         self.individual = Indiv.createIndiviual(stock, weightCapacity, volumeCapacity, accountBalance)
+        self.weightCapacity = weightCapacity
+        self.volumeCapacity = volumeCapacity
+        self.accountBalance = accountBalance
 
     def createIndiviual(stock, weightCapacity, volumeCapacity, accountBalance):
         individual = np.empty(0)
@@ -91,18 +94,99 @@ class GA:
         fitness = 1
         return 1/fitness
 
-    def nameOfCrossover(self,parent1, parent2): 
+    def uniformCrossover(self,parent1, parent2):
+        
+        sizeP1 = np.size(parent1.individual)
+        sizeP2 = np.size(parent2.individual)
 
-        child1 = 0
-        child2 = 0
+        extraChromosomes = np.empty(0)
+
+        if sizeP1 < sizeP2:
+            extraChromosomes = parent2.individual[-(sizeP2-sizeP1):]
+            parent2.individual = parent2.individual[:-(sizeP2-sizeP1)]
+        elif sizeP1 > sizeP2:
+            extraChromosomes = parent1.individual[-(sizeP1-sizeP2):]
+            parent1.individual = parent1.individual[:-(sizeP1-sizeP2)]
+        else:
+            pass
+
+        child1 = parent1
+        child2 = parent2
+
+        child1.individual = np.empty(0)
+        child1.individual = np.empty(1)
+
+        for gen1, gen2 in zip(parent1.individual, parent2.individual):
+
+            if self.crossoverProbability < np.random.uniform(0, 1):
+                print("No Cross")
+                child1.individual = np.append(child1, gen1)
+                child2.individual = np.append(child2, gen2)
+            else:
+                print("Cross")
+                child1.individual = np.append(child1, gen2)
+                child2.individual = np.append(child2, gen1)
+
+        for gen in extraChromosomes:
+        
+            if self.crossoverProbability < np.random.uniform(0, 1):
+                child1.individual = np.append(child1, gen)
+            else:
+                child2.individual = np.append(child2, gen)
+
+        #child1, child2 = self.checkChildLimits(child1, child2)
+                
         return child1, child2
     
-    def nameOfAnotherTypeCrossover(self,parent1, parent2):
+    def checkChildLimits(self, child1, child2):
 
-        child1 = 0
-        child2 = 0
+        # [child1, child2]
+        weight = []
+        volume = []
+        value = []
+        for i, child in enumerate[child1, child2]:
+            for item in child.individual:
+                weight[i] += item.weight
+                volume[i] += item.volume
+                value[i] += item.value
+
+        while (weight[0] > child1.weightCapacity) or (weight[1] > child2.weightCapacity):
+            if (weight[0] > child1.weightCapacity):
+                child1.individual = sorted(child1.individual, key=lambda x: x.weight)
+                child2.individual = np.append(child2.individual, child1.individual[0])
+                child1.individual = child1.individual[1:]
+            
+            if (weight[1] > child2.weightCapacity):
+                child2.individual = sorted(child2.individual, key=lambda x: x.weight)
+                child1.individual = np.append(child1.individual, child2.individual[0])
+                child2.individual = child2.individual[1:]
+
+
+        while (volume[0] > child1.volumeCapacity) or (weight[1] > child2.volumeCapacity):
+            if (volume[0] > child1.volumeCapacity):
+                child1.individual = sorted(child1.individual, key=lambda x: x.volume)
+                child2.individual = np.append(child2.individual, child1.individual[0])
+                child1.individual = child1.individual[1:]
+            
+            if (volume[1] > child2.volumeCapacity):
+                child2.individual = sorted(child2.individual, key=lambda x: x.volume)
+                child1.individual = np.append(child1.individual, child2.individual[0])
+                child2.individual = child2.individual[1:]
+
+
+        while (value[0] > child1.accountBalance) or (value[1] > child2.accountBalance):
+            if (value[0] > child1.accountBalance):
+                child1.individual = sorted(child1.individual, key=lambda x: x.value)
+                child2.individual = np.append(child2.individual, child1.individual[0])
+                child1.individual = child1.individual[1:]
+            
+            if (value[1] > child2.accountBalancey):
+                child2.individual = sorted(child2.individual, key=lambda x: x.value)
+                child1.individual = np.append(child1.individual, child2.individual[0])
+                child2.individual = child2.individual[1:]
+
         return child1, child2
-
+    
     def mutateChild(self, child):
         mutatedChild = 0
         return mutatedChild
@@ -137,3 +221,13 @@ populationSize = 6
 pop = Pop(items, maxWeightCapacity, maxVolumeCapacity, accountBalance, populationSize)
 
 printPopInfo(pop.population)
+
+mutationRate = 0.2
+crossOverProb = 0.98
+ga = GA(mutationRate, crossOverProb)
+
+child1, child2 = ga.uniformCrossover(pop.population[0], pop.population[1])
+
+print(pop.population[0].individual)
+
+#printPopInfo([child1, child2])

@@ -150,7 +150,6 @@ while True:
     if algorithm.targetFound or generations == maximumNumberOfGenerations:
         break
 
-    
     parents = algorithm.costBasedSelection(fitnessValues,population)
     newPopulation = algorithm.getNewPopulation(parents)
     population = newPopulation
