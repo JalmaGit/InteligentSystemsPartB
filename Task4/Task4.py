@@ -3,231 +3,257 @@ import matplotlib.pyplot as plt
 
 #This Code solves for unbound Knapsack Problem using Genetic Algorithm
 
-def printPopInfo(population):
-    for ind in population:
-        print(f"New Individual with {np.size(ind.individual)} items")
-        weight = 0
-        volume = 0
-        value = 0
-        for item in ind.individual:
-            weight += item.weight
-            volume += item.volume
-            value += item.value
-        
-        print(f"{weight=}, {volume=}, {value=}")
-
-class Item:
-    def __init__(self, weight, volume, value):
-        self.weight = weight
-        self.volume = volume
-        self.value = value
-
-class Indiv:
-    def __init__(self, stock, weightCapacity, volumeCapacity, accountBalance):     
-        self.individual = Indiv.createIndiviual(stock, weightCapacity, volumeCapacity, accountBalance)
+class Pop:
+    def __init__(self, items, weightCapacity, volumeCapacity, maxItemWeight, maxItemVolume, maxItemPrice, populationSize):
+        populationSize = populationSize // 2 * 2
+        self.stock = Pop.createStock(items, maxItemWeight, maxItemVolume, maxItemPrice)
+        self.population = Pop.createInitialPopulation(self.stock, weightCapacity, volumeCapacity, populationSize)
         self.weightCapacity = weightCapacity
         self.volumeCapacity = volumeCapacity
-        self.accountBalance = accountBalance
+        self.maxItemPrice = maxItemPrice
 
-    def createIndiviual(stock, weightCapacity, volumeCapacity, accountBalance):
-        individual = np.empty(0)
+    def createInitialPopulation(stock, weightCapacity, volumeCapacity, populationSize):
 
-        totalWeight = 0
-        totalVolume = 0
-        totalCost = 0
-        numberOfItems = 0
+        population = {}
 
-        while True:
-            itemToAdd = stock[np.random.randint(np.size(stock))]
-            totalWeight += itemToAdd.weight
-            totalVolume += itemToAdd.volume
-            totalCost += itemToAdd.value
+        for i in range(populationSize):
+            population[i] = Pop.createIndividual(stock, weightCapacity, volumeCapacity)
             
-            if (totalWeight > weightCapacity) or (totalVolume > volumeCapacity) or (totalCost > accountBalance):
-                totalWeight -= itemToAdd.weight
-                totalVolume -= itemToAdd.volume
-                totalCost -= itemToAdd.value
-                break
-
-            numberOfItems += 1
-
-            individual = np.append(individual,itemToAdd)
-
-        return individual
-
-class Pop:
-    def __init__(self, items, weightCapacity, volumeCapacity, accountBalance, populationSize):
-        self.population = Pop.createInitialPopulation(items, weightCapacity, volumeCapacity, accountBalance, populationSize)
-
-    def createInitialPopulation(items, weightCapacity, volumeCapacity, accountBalance, populationSize):
-        stock = Pop.createStock(items, weightCapacity, volumeCapacity, accountBalance)
-
-        population = np.empty(0)
-        for i in range(populationSize):    
-            individual = Indiv(stock, weightCapacity, volumeCapacity, accountBalance)
-            population = np.append(population, individual)
-
         return population
 
-    def createStock(items, weightCapacity, volumeCapacity, accountBalance):
-        stock = np.empty(0)
-
-        while True:  # Create Items
-            randomWeight = np.random.randint(weightCapacity//5)
-            randomVolume = np.random.randint(volumeCapacity//5)
-            randomCost = np.random.randint(accountBalance//10)
-
-            itemToAdd = Item(randomWeight, randomVolume, randomCost)
-            stock = np.append(stock, itemToAdd)
+    def createStock(items, maxItemWeight, maxItemVolume, maxItemPrice):
         
-            if np.size(stock) == items:
-                break
+        #[weight, volume, value]
+        stock = np.array([np.random.randint(1,maxItemWeight), np.random.randint(1,maxItemVolume),np.random.randint(1,maxItemPrice)])
+        
+        for i in range(items-1):  # Create Items
+            randomWeight = np.random.randint(1, maxItemWeight)
+            randomVolume = np.random.randint(1, maxItemVolume)
+            randomValue = np.random.randint(1, maxItemPrice)
+
+            itemToAdd = np.array([randomWeight, randomVolume, randomValue])
+            stock = np.vstack([stock, itemToAdd])
+        
+        #print(stock)
 
         return stock
+    
+    def createIndividual(stock, weightCapacity, volumeCapacity):
+        individual = np.array(stock[np.random.randint(stock.shape[0])])
+
+        totalWeight = individual[0] #Weight
+        totalVolume = individual[1] #Volume
+
+        while True:
+            itemToAdd = stock[np.random.randint(stock.shape[0])]
+            totalWeight += itemToAdd[0] #Weight
+            totalVolume += itemToAdd[1] #Volume
+            
+            if (totalWeight > weightCapacity) or (totalVolume > volumeCapacity):
+                totalWeight -= itemToAdd[0] #Weight
+                totalVolume -= itemToAdd[1] #Volume
+                #print("Weight= ", totalWeight, "Volume= ", totalVolume, "Cost= ", totalCost)
+                break
+
+            individual = np.vstack([individual, itemToAdd])
+            
+        return individual
 
 class GA:
-    def __init__(self, mutationRate, crossoverProbability):
+    def __init__(self, mutationRate, crossoverProbability, weightCapacity, volumeCapacity, stock):
         self.mutationRate = mutationRate
         self.crossoverProbability = crossoverProbability
+        self.weightCapacity = weightCapacity
+        self.volumeCapacity = volumeCapacity
+        self.stock = stock
+        self.penalty = 0.001
+        self.higestBackPackValue = 0
 
-    def fitnesFunction(self, candidate): 
-        fitness = 1
-        return 1/fitness
+    def fitnesFunction(self, candidate):
+        valuesFromCandidate = candidate[:, 2]
+
+        totalValue = np.sum(valuesFromCandidate)
+
+        fitness = totalValue
+        
+        return 100/fitness
 
     def uniformCrossover(self,parent1, parent2):
-        
-        sizeP1 = np.size(parent1.individual)
-        sizeP2 = np.size(parent2.individual)
 
-        extraChromosomes = np.empty(0)
+        child1 = np.array([0,0,0])
+        child2 = np.array([0,0,0])
 
-        if sizeP1 < sizeP2:
-            extraChromosomes = parent2.individual[-(sizeP2-sizeP1):]
-            parent2.individual = parent2.individual[:-(sizeP2-sizeP1)]
-        elif sizeP1 > sizeP2:
-            extraChromosomes = parent1.individual[-(sizeP1-sizeP2):]
-            parent1.individual = parent1.individual[:-(sizeP1-sizeP2)]
-        else:
-            pass
+        if self.crossoverProbability >= np.random.uniform(0, 1):
 
-        child1 = parent1
-        child2 = parent2
+            extraChromosomes = np.empty(0)        
 
-        child1.individual = np.empty(0)
-        child1.individual = np.empty(1)
+            if len(parent1) < len(parent2):
+                extraChromosomes = parent2[(len(parent1)-len(parent2)):]
+                parent2 = parent2[:(len(parent1)-len(parent2))]
+            elif len(parent2) < len(parent1):
+                extraChromosomes = parent1[(len(parent2)-len(parent1)):]
+                parent1 = parent1[:(len(parent2)-len(parent1))]
 
-        for gen1, gen2 in zip(parent1.individual, parent2.individual):
-
-            if self.crossoverProbability < np.random.uniform(0, 1):
-                print("No Cross")
-                child1.individual = np.append(child1, gen1)
-                child2.individual = np.append(child2, gen2)
-            else:
-                print("Cross")
-                child1.individual = np.append(child1, gen2)
-                child2.individual = np.append(child2, gen1)
-
-        for gen in extraChromosomes:
-        
-            if self.crossoverProbability < np.random.uniform(0, 1):
-                child1.individual = np.append(child1, gen)
-            else:
-                child2.individual = np.append(child2, gen)
-
-        #child1, child2 = self.checkChildLimits(child1, child2)
+            for gen1, gen2 in zip(parent1, parent2):
                 
+                if np.random.uniform(0, 1) < 0.5: # Coin Toss
+                    child1 = np.vstack([child1, gen1])
+                    child2 = np.vstack([child2, gen2])
+                else:
+                    child1 = np.vstack([child1, gen2])
+                    child2 = np.vstack([child2, gen1])
+
+            child1 = np.delete(child1, (0), axis=0)
+            child2 = np.delete(child2, (0), axis=0)
+
+            for gen in extraChromosomes:
+                if 0.5 < np.random.uniform(0, 1):
+                    child1 = np.vstack([child1, gen])
+                else:
+                    child2 = np.vstack([child2, gen])
+
+        else:
+            child1 = parent1
+            child2 = parent2
+
+        child1 = self.mutateChild(child1)
+        child2 = self.mutateChild(child2)
+
+        child1 = self.checkChildLimits(child1)
+        child2 = self.checkChildLimits(child2)
+
         return child1, child2
     
-    def checkChildLimits(self, child1, child2):
+    def checkChildLimits(self, child):
 
-        # [child1, child2]
-        weight = []
-        volume = []
-        value = []
-        for i, child in enumerate[child1, child2]:
-            for item in child.individual:
-                weight[i] += item.weight
-                volume[i] += item.volume
-                value[i] += item.value
+        totalWeight = np.sum(child[:, 0])
+        totalVolume = np.sum(child[:, 1])
 
-        while (weight[0] > child1.weightCapacity) or (weight[1] > child2.weightCapacity):
-            if (weight[0] > child1.weightCapacity):
-                child1.individual = sorted(child1.individual, key=lambda x: x.weight)
-                child2.individual = np.append(child2.individual, child1.individual[0])
-                child1.individual = child1.individual[1:]
-            
-            if (weight[1] > child2.weightCapacity):
-                child2.individual = sorted(child2.individual, key=lambda x: x.weight)
-                child1.individual = np.append(child1.individual, child2.individual[0])
-                child2.individual = child2.individual[1:]
+        while totalWeight > self.weightCapacity: 
+            minValueIndex = np.argmin(child[:, 2])
 
+            child = np.delete(child, minValueIndex, axis=0)
+            totalWeight = np.sum(child[:, 0])
 
-        while (volume[0] > child1.volumeCapacity) or (weight[1] > child2.volumeCapacity):
-            if (volume[0] > child1.volumeCapacity):
-                child1.individual = sorted(child1.individual, key=lambda x: x.volume)
-                child2.individual = np.append(child2.individual, child1.individual[0])
-                child1.individual = child1.individual[1:]
-            
-            if (volume[1] > child2.volumeCapacity):
-                child2.individual = sorted(child2.individual, key=lambda x: x.volume)
-                child1.individual = np.append(child1.individual, child2.individual[0])
-                child2.individual = child2.individual[1:]
+        while totalVolume > self.volumeCapacity:
+            minValueIndex = np.argmin(child[:, 2])
 
-
-        while (value[0] > child1.accountBalance) or (value[1] > child2.accountBalance):
-            if (value[0] > child1.accountBalance):
-                child1.individual = sorted(child1.individual, key=lambda x: x.value)
-                child2.individual = np.append(child2.individual, child1.individual[0])
-                child1.individual = child1.individual[1:]
-            
-            if (value[1] > child2.accountBalancey):
-                child2.individual = sorted(child2.individual, key=lambda x: x.value)
-                child1.individual = np.append(child1.individual, child2.individual[0])
-                child2.individual = child2.individual[1:]
-
-        return child1, child2
+            child = np.delete(child, minValueIndex, axis=0)
+            totalVolume = np.sum(child[:, 1])
+                
+        return child
     
     def mutateChild(self, child):
-        mutatedChild = 0
+        mutatedChild = np.array([0,0,0])       
+        for gen in child:
+            if self.mutationRate >= np.random.uniform(0, 1):
+                gen = self.stock[np.random.randint(0, len(self.stock))]
+                mutatedChild = np.vstack([mutatedChild, gen])
+            else:
+                mutatedChild = np.vstack([mutatedChild, gen])
+                
+        mutatedChild = np.delete(mutatedChild, (0), axis=0)
+
         return mutatedChild
 
-    def nameOfSelection(self, fitnessValues, population):
-        matingPartners = 0
+    def costBasedSelection(self, fitnessValues, population):
+
+        ranks = np.argsort(fitnessValues)
+
+        selectionProbabilities = (2 - np.linspace(0, 2, len(fitnessValues))) / len(fitnessValues)
+
+        cumulativeProbabilities = np.cumsum(selectionProbabilities)
+        selectedIndices = np.searchsorted(cumulativeProbabilities, np.random.rand(len(fitnessValues)))
+
+        matingPartners = {}
+
+        for i in range(len(population)):
+            matingPartners[i] = population[ranks[selectedIndices[i]]]
+
         return matingPartners
     
     def getFitnessValues(self, population):
-        fitnesValuesArray = np.array(["Need To Do Calc"])
+        fitnesValuesArray = np.array([self.fitnesFunction(population[individual]) for individual in population])
         return fitnesValuesArray
     
     def getNewPopulation(self, parents):
-        newPopulation = 0
+
+        newPopulation = {}
+        for i in range(0,len(parents),2):
+            child1, child2 = self.uniformCrossover(parents[i],parents[i+1])
+
+            newPopulation[i] = child1
+            newPopulation[i+1] = child2
+
         return newPopulation
 
     def bestSoFar(self,fitnessValues, population):
         bestIndex = np.argmin(fitnessValues)
-        print(population[bestIndex])
+        #print(population[bestIndex])
+
+        totalWeight = np.sum(population[bestIndex][:, 0])
+        totalVolume = np.sum(population[bestIndex][:, 1])
+        totalValue = np.sum(population[bestIndex][:, 2])
+
+        print("Weight= ", totalWeight, "Volume= ", totalVolume, "Cost= ", totalValue)
+        self.higestBackPackValue = totalValue
         return np.min(fitnessValues)
 
+class Logger:
+    def __init__(self) -> None:
+        self.fitnessCostLog = np.empty(0)
+        self.generationList = np.empty(0)
 
-#Test Stuff
+    def updatelog(self, generations, lowestFitnesCost):
+        self.generationList = np.append(self.generationList, generations)
+        self.fitnessCostLog = np.append(self.fitnessCostLog,lowestFitnesCost)
 
 # Constrains
-items = 5
-maxWeightCapacity = 20 # Kilogram
-maxVolumeCapacity = 15 # Liters
-accountBalance = 100 # Dollars
-populationSize = 6
 
-pop = Pop(items, maxWeightCapacity, maxVolumeCapacity, accountBalance, populationSize)
+##Item Constraints
+items = 20
+maxItemWeight = 20 # Kg
+maxItemVolume = 20 # Liters
+maxItemPrices = 100 # Dollars
 
-printPopInfo(pop.population)
+##Backpack Constraints
+weightCapacity = 50 # Kilogram
+volumeCapacity = 60 # Liters
 
-mutationRate = 0.2
-crossOverProb = 0.98
-ga = GA(mutationRate, crossOverProb)
+##Setting For GA
+populationSize = 1000
+mutationRate = 0.02
+crossOverProb = 0.5
 
-child1, child2 = ga.uniformCrossover(pop.population[0], pop.population[1])
+numberOfGenerations = 100
 
-print(pop.population[0].individual)
+pop = Pop(items, weightCapacity, volumeCapacity, maxItemWeight, maxItemVolume, maxItemPrices, populationSize)
+population = pop.population
 
-#printPopInfo([child1, child2])
+algorithm = GA(mutationRate, crossOverProb, weightCapacity, volumeCapacity, pop.stock)
+logger = Logger()
+
+generations = 0
+while True:
+    fitnessValues = algorithm.getFitnessValues(population)
+
+    lowestCost = algorithm.bestSoFar(fitnessValues,population)
+
+    if generations > numberOfGenerations:
+        break
+
+    parents = algorithm.costBasedSelection(fitnessValues, population)
+    newPopulation = algorithm.getNewPopulation(parents)
+    population = newPopulation
+    logger.updatelog(generations, lowestCost)
+
+    generations += 1
+
+highestBackPackValue = algorithm.higestBackPackValue
+
+plt.title("Fitness Performance Graph, Highest Backpack Value: " + str(highestBackPackValue) + "\n Pop: " + str(populationSize) + ", Pm: " + str(mutationRate)+ ", Pc: " + str(crossOverProb))
+plt.xlabel("Generations")
+plt.ylabel("Fitness Chromosome")
+
+plt.plot(logger.generationList, logger.fitnessCostLog)
+plt.show()
